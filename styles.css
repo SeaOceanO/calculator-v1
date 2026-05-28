@@ -3,6 +3,13 @@
     box-sizing: border-box;
 }
 
+html,
+body {
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+    overscroll-behavior: none;
+}
+
 body {
     margin: 0;
     min-height: 100vh;
@@ -28,6 +35,19 @@ body {
     border-radius: 8px;
     background: #ffffff;
     box-shadow: 0 18px 50px rgba(31, 41, 51, 0.16);
+}
+
+button,
+.calculator,
+.calculator-toolbar,
+.mode-switch,
+.scientific-panel,
+.cursor-panel,
+.buttons {
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* V3 顶部工具栏：模式切换和 DEG/RAD 切换 */
@@ -91,7 +111,7 @@ body {
 .display {
     width: 100%;
     min-height: 78px;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
     padding: 0 16px;
     border: 1px solid #d8dee6;
     border-radius: 8px;
@@ -126,14 +146,15 @@ body {
 /* V4 错误提示：计算失败时不清空表达式，只给轻微提示 */
 .status-message {
     min-height: 18px;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     color: #ef4444;
     font-size: 13px;
     text-align: right;
 }
 
 .status-message:empty {
-    margin-bottom: 4px;
+    min-height: 0;
+    margin-bottom: 0;
 }
 
 .math-display.is-invalid {
@@ -159,17 +180,19 @@ body {
     }
 }
 
-/* V3 历史记录：只显示最近 5 次，空的时候隐藏 */
+/* V3 历史记录：固定预留两行高度，避免计算后记录区域突然把布局挤开 */
 .history-list {
     display: grid;
     gap: 5px;
+    min-height: 72px;
     max-height: 72px;
     margin-bottom: 10px;
     overflow: hidden;
 }
 
 .history-list.is-empty {
-    display: none;
+    visibility: hidden;
+    pointer-events: none;
 }
 
 .history-item {
@@ -433,6 +456,7 @@ body {
 
     .history-list {
         gap: 4px;
+        min-height: 62px;
         max-height: 62px;
         margin-bottom: 8px;
     }

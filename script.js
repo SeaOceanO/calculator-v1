@@ -6,6 +6,7 @@ const angleModeButton = document.getElementById("angleModeButton");
 const historyList = document.getElementById("historyList");
 const modeButtons = document.querySelectorAll(".mode-button");
 const statusMessage = document.getElementById("statusMessage");
+const doubleTapButtonAreas = document.querySelectorAll(".calculator-toolbar, .scientific-panel, .cursor-panel, .buttons");
 
 let hasCalculated = true;
 let lastAnswer = 0;
@@ -15,6 +16,7 @@ let resultDisplayMode = "decimal";
 let angleMode = "DEG";
 let historyItems = [];
 let isSettingLatex = false;
+const touchHandledButtons = new WeakSet();
 
 // Node 测试环境没有 MathLive，fallbackLatex 只用于自动测试。
 let fallbackLatex = "0";
@@ -1052,11 +1054,66 @@ function calculate() {
     }
 }
 
+function getTouchButton(event) {
+    if (!event.target || typeof event.target.closest !== "function") {
+        return null;
+    }
+
+    return event.target.closest("button");
+}
+
+function activateButtonFromTouch(button) {
+    if (!button) {
+        return;
+    }
+
+    touchHandledButtons.add(button);
+    handleButtonClick({
+        currentTarget: button,
+        type: "double-tap-touch"
+    });
+
+    const timeout = typeof window !== "undefined" && window.setTimeout
+        ? window.setTimeout.bind(window)
+        : (typeof setTimeout === "function" ? setTimeout : null);
+
+    if (timeout) {
+        timeout(function () {
+            touchHandledButtons.delete(button);
+        }, 350);
+    }
+}
+
+// iOS 桌面 Web App：只在计算器按键区域拦截快速双击，避免页面 double-tap zoom。
+function addDoubleTapZoomGuard(buttonArea) {
+    let lastTouchEnd = 0;
+
+    if (!buttonArea || typeof buttonArea.addEventListener !== "function") {
+        return;
+    }
+
+    buttonArea.addEventListener("touchend", function (event) {
+        const now = Date.now();
+
+        if (now - lastTouchEnd <= 300) {
+            event.preventDefault();
+            activateButtonFromTouch(getTouchButton(event));
+        }
+
+        lastTouchEnd = now;
+    }, { passive: false });
+}
+
 function handleButtonClick(event) {
     const button = event.currentTarget;
     const value = button.dataset.value;
     const latex = button.dataset.latex;
     const action = button.dataset.action;
+
+    if (event.type === "click" && touchHandledButtons.has(button)) {
+        touchHandledButtons.delete(button);
+        return;
+    }
 
     playButtonAnimation(button);
 
@@ -1125,6 +1182,8 @@ buttons.forEach(function (button) {
         button.classList.remove("is-pressed");
     });
 });
+
+doubleTapButtonAreas.forEach(addDoubleTapZoomGuard);
 
 function playButtonAnimation(button) {
     if (!button || !button.classList) {
