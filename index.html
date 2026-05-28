@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V1 基础计算器</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- 页面主体：把计算器放在屏幕中间，电脑和手机都容易使用 -->
+    <main class="page">
+        <section class="calculator" aria-label="基础计算器">
+            <!-- 显示屏：readonly 表示用户不能直接改输入框，只通过按钮或键盘输入 -->
+            <input id="display" class="display" type="text" value="0" readonly aria-label="计算器显示屏">
+
+            <!-- 按钮区：data-value 是 JavaScript 读取的真实输入值 -->
+            <div class="buttons">
+                <button class="button button-clear" type="button" data-action="clear">C</button>
+                <button class="button button-icon" type="button" data-action="backspace" aria-label="退格" title="退格">
+                    <!-- 退格图标：外框改成长方形比例，中间 X 单独居中绘制 -->
+                    <svg class="backspace-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 18" aria-hidden="true">
+                        <path class="backspace-outline" d="M9 2.5H24.5C25.6 2.5 26.5 3.4 26.5 4.5V13.5C26.5 14.6 25.6 15.5 24.5 15.5H9C8.4 15.5 7.8 15.25 7.38 14.82L1.9 9.34C1.71 9.15 1.71 8.85 1.9 8.66L7.38 3.18C7.8 2.75 8.4 2.5 9 2.5Z"/>
+                        <path class="backspace-x" d="M13.55 6.7L18.15 11.3M18.15 6.7L13.55 11.3"/>
+                    </svg>
+                </button>
+                <button class="button" type="button" data-value="(">(</button>
+                <button class="button" type="button" data-value=")">)</button>
+
+                <button class="button" type="button" data-value="7">7</button>
+                <button class="button" type="button" data-value="8">8</button>
+                <button class="button" type="button" data-value="9">9</button>
+                <button class="button button-operator" type="button" data-value="/">&divide;</button>
+
+                <button class="button" type="button" data-value="4">4</button>
+                <button class="button" type="button" data-value="5">5</button>
+                <button class="button" type="button" data-value="6">6</button>
+                <button class="button button-operator" type="button" data-value="*">&times;</button>
+
+                <button class="button" type="button" data-value="1">1</button>
+                <button class="button" type="button" data-value="2">2</button>
+                <button class="button" type="button" data-value="3">3</button>
+                <button class="button button-operator" type="button" data-value="-">&minus;</button>
+
+                <button class="button" type="button" data-value="0">0</button>
+                <button class="button" type="button" data-value=".">.</button>
+                <button class="button button-operator" type="button" data-value="+">+</button>
+                <button class="button button-equals" type="button" data-action="calculate">=</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- 把 JavaScript 放在页面底部加载，确保上面的 HTML 已经存在 -->
+    <script src="script.js"></script>
+</body>
+</html>
