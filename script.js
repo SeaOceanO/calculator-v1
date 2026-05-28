@@ -9,14 +9,39 @@ const statusMessage = document.getElementById("statusMessage");
 
 let hasCalculated = true;
 let lastAnswer = 0;
+let decimalResult = null;
+let fractionResult = null;
+let resultDisplayMode = "decimal";
 let angleMode = "DEG";
 let historyItems = [];
+let isSettingLatex = false;
 
 // Node 测试环境没有 MathLive，fallbackLatex 只用于自动测试。
 let fallbackLatex = "0";
 
 function mathfieldReady() {
     return mathDisplay && typeof mathDisplay.getValue === "function" && typeof mathDisplay.setValue === "function";
+}
+
+// V4：禁用 MathLive 自带虚拟键盘，手机端只使用页面里的计算器按钮。
+function hideMathVirtualKeyboard() {
+    if (typeof window !== "undefined" && window.mathVirtualKeyboard) {
+        window.mathVirtualKeyboard.hide();
+    }
+}
+
+function configureMathDisplayKeyboard() {
+    if (!mathDisplay) {
+        return;
+    }
+
+    if (typeof mathDisplay.setAttribute === "function") {
+        mathDisplay.setAttribute("math-virtual-keyboard-policy", "manual");
+        mathDisplay.setAttribute("inputmode", "none");
+    }
+
+    mathDisplay.mathVirtualKeyboardPolicy = "manual";
+    hideMathVirtualKeyboard();
 }
 
 function getLatex() {
@@ -30,12 +55,18 @@ function getLatex() {
 function setLatex(latex) {
     const value = latex || "";
 
-    if (mathfieldReady()) {
-        mathDisplay.setValue(value, { silenceNotifications: true });
-        mathDisplay.value = value;
-        mathDisplay.executeCommand("moveToMathfieldEnd");
-    } else {
-        fallbackLatex = value;
+    isSettingLatex = true;
+
+    try {
+        if (mathfieldReady()) {
+            mathDisplay.setValue(value, { silenceNotifications: true });
+            mathDisplay.value = value;
+            mathDisplay.executeCommand("moveToMathfieldEnd");
+        } else {
+            fallbackLatex = value;
+        }
+    } finally {
+        isSettingLatex = false;
     }
 }
 
@@ -61,6 +92,27 @@ function showInvalid(message) {
     }
 }
 
+function showStatus(message) {
+    if (statusMessage) {
+        statusMessage.textContent = message || "";
+    }
+
+    if (mathDisplay && mathDisplay.classList) {
+        mathDisplay.classList.remove("is-invalid");
+    }
+}
+
+function hasInvalidStatus() {
+    return Boolean(mathDisplay && mathDisplay.classList && mathDisplay.classList.contains("is-invalid"));
+}
+
+// S⇔D：清掉上一次结果的两种显示形式，避免新输入时误切换旧结果。
+function resetResultState() {
+    decimalResult = null;
+    fractionResult = null;
+    resultDisplayMode = "decimal";
+}
+
 function isOperatorToken(token) {
     return token === "+" || token === "-" || token === "*" || token === "/" || token === "^";
 }
@@ -82,6 +134,7 @@ function insertMath(latex, options) {
     }
 
     hasCalculated = false;
+    resetResultState();
     clearStatus();
 
     if (mathfieldReady() && typeof mathDisplay.executeCommand === "function") {
@@ -139,12 +192,14 @@ function valueKeepsResult(value, latex) {
 function clearCalculator() {
     setLatex("0");
     hasCalculated = true;
+    resetResultState();
     clearStatus();
 }
 
 function backspace() {
     clearStatus();
     hasCalculated = false;
+    resetResultState();
 
     if (mathfieldReady() && typeof mathDisplay.executeCommand === "function") {
         mathDisplay.focus();
@@ -767,6 +822,122 @@ function formatResultNumber(value) {
     return String(rounded);
 }
 
+function gcd(a, b) {
+    let left = Math.abs(a);
+    let right = Math.abs(b);
+
+    while (right !== 0) {
+        const remainder = left % right;
+
+        left = right;
+        right = remainder;
+    }
+
+    return left || 1;
+}
+
+// S⇔D：把小数安全转换成较小分母的分数，避免 3.14159 被乱转成巨大分数。
+function decimalToFraction(value, maxDenominator) {
+    const limit = maxDenominator || 1000;
+    const tolerance = 1e-9;
+    const normalizedValue = Number(Number(value).toPrecision(12));
+
+    if (!Number.isFinite(normalizedValue) || Math.abs(normalizedValue) > 1000000000) {
+        return null;
+    }
+
+    const sign = normalizedValue < 0 ? -1 : 1;
+    const absoluteValue = Math.abs(normalizedValue);
+    let bestNumerator = Math.round(absoluteValue);
+    let bestDenominator = 1;
+    let bestError = Math.abs(absoluteValue - bestNumerator);
+
+    for (let denominator = 1; denominator <= limit; denominator = denominator + 1) {
+        const numerator = Math.round(absoluteValue * denominator);
+        const approximation = numerator / denominator;
+        const error = Math.abs(absoluteValue - approximation);
+
+        if (error < bestError) {
+            bestNumerator = numerator;
+            bestDenominator = denominator;
+            bestError = error;
+        }
+    }
+
+    if (bestError > tolerance) {
+        return null;
+    }
+
+    const divisor = gcd(bestNumerator, bestDenominator);
+
+    return {
+        numerator: sign * (bestNumerator / divisor),
+        denominator: bestDenominator / divisor
+    };
+}
+
+function fractionToLatex(fraction) {
+    if (!fraction) {
+        return "";
+    }
+
+    if (fraction.denominator === 1) {
+        return String(fraction.numerator);
+    }
+
+    if (fraction.numerator < 0) {
+        return "-\\frac{" + Math.abs(fraction.numerator) + "}{" + fraction.denominator + "}";
+    }
+
+    return "\\frac{" + fraction.numerator + "}{" + fraction.denominator + "}";
+}
+
+function fractionToText(fraction) {
+    if (!fraction) {
+        return "";
+    }
+
+    if (fraction.denominator === 1) {
+        return String(fraction.numerator);
+    }
+
+    return fraction.numerator + "/" + fraction.denominator;
+}
+
+function expressionCanBecomeFraction(rawLatex) {
+    const expressionText = latexToExpression(rawLatex);
+
+    return !expressionText.includes("π")
+        && !expressionText.includes("e")
+        && !expressionText.includes("√")
+        && !expressionText.includes("sin")
+        && !expressionText.includes("cos")
+        && !expressionText.includes("tan")
+        && !expressionText.includes("log")
+        && !expressionText.includes("ln")
+        && !expressionText.includes("Ans")
+        && !expressionText.includes("inv");
+}
+
+function buildFractionResult(rawLatex, resultText) {
+    if (!expressionCanBecomeFraction(rawLatex)) {
+        return null;
+    }
+
+    const fraction = decimalToFraction(Number(resultText), 1000);
+
+    if (!fraction) {
+        return null;
+    }
+
+    return {
+        numerator: fraction.numerator,
+        denominator: fraction.denominator,
+        latex: fractionToLatex(fraction),
+        text: fractionToText(fraction)
+    };
+}
+
 function calculateLatex(latex) {
     const expressionText = latexToExpression(latex);
     const tokens = tokenize(expressionText);
@@ -801,14 +972,54 @@ function renderHistory() {
     });
 }
 
-function addHistoryItem(rawLatex, resultText) {
+function addHistoryItem(rawLatex, resultText, currentFractionResult) {
     historyItems.unshift({
         expression: latexToExpression(rawLatex),
+        decimalResult: resultText,
+        fractionResult: currentFractionResult ? currentFractionResult.text : "",
         result: resultText
     });
 
     historyItems = historyItems.slice(0, 2);
     renderHistory();
+}
+
+function syncLatestHistoryResult() {
+    if (historyItems.length === 0) {
+        return;
+    }
+
+    if (resultDisplayMode === "fraction" && fractionResult) {
+        historyItems[0].result = fractionResult.text;
+    } else if (decimalResult !== null) {
+        historyItems[0].result = decimalResult;
+    }
+
+    renderHistory();
+}
+
+// S⇔D：只切换“已计算结果”的显示形式，不重新计算，也不改用户原来的表达式记录。
+function toggleResultDisplay() {
+    if (!hasCalculated || decimalResult === null || hasInvalidStatus()) {
+        return;
+    }
+
+    if (!fractionResult) {
+        showStatus("Cannot convert exactly");
+        return;
+    }
+
+    if (resultDisplayMode === "decimal") {
+        setLatex(fractionResult.latex);
+        resultDisplayMode = "fraction";
+    } else {
+        setLatex(decimalResult);
+        resultDisplayMode = "decimal";
+    }
+
+    hasCalculated = true;
+    clearStatus();
+    syncLatestHistoryResult();
 }
 
 function calculate() {
@@ -820,13 +1031,18 @@ function calculate() {
         }
 
         const resultText = calculateLatex(rawLatex);
+        const currentFractionResult = buildFractionResult(rawLatex, resultText);
 
         lastAnswer = Number(resultText);
+        decimalResult = resultText;
+        fractionResult = currentFractionResult;
+        resultDisplayMode = "decimal";
         setLatex(resultText);
         hasCalculated = true;
         clearStatus();
-        addHistoryItem(rawLatex, resultText);
+        addHistoryItem(rawLatex, resultText, currentFractionResult);
     } catch (error) {
+        resetResultState();
         console.warn("Calculation failed", {
             latex: rawLatex,
             normalized: normalizeLatex(rawLatex),
@@ -866,6 +1082,11 @@ function handleButtonClick(event) {
 
     if (action === "toggle-angle") {
         toggleAngleMode();
+        return;
+    }
+
+    if (action === "toggle-result-display") {
+        toggleResultDisplay();
         return;
     }
 
@@ -928,9 +1149,22 @@ function findButtonByAction(action) {
 document.addEventListener("keydown", handleKeyboardInput);
 
 if (mathDisplay) {
+    configureMathDisplayKeyboard();
+
+    mathDisplay.addEventListener("focus", hideMathVirtualKeyboard);
+    mathDisplay.addEventListener("click", hideMathVirtualKeyboard);
+    mathDisplay.addEventListener("pointerdown", hideMathVirtualKeyboard);
+    mathDisplay.addEventListener("touchstart", hideMathVirtualKeyboard, { passive: true });
+
     mathDisplay.addEventListener("input", function () {
+        if (isSettingLatex) {
+            return;
+        }
+
         hasCalculated = false;
+        resetResultState();
         clearStatus();
+        hideMathVirtualKeyboard();
     });
 
     mathDisplay.addEventListener("beforeinput", function (event) {
@@ -944,3 +1178,4 @@ if (mathDisplay) {
 setMode("scientific");
 renderHistory();
 setLatex("0");
+hideMathVirtualKeyboard();

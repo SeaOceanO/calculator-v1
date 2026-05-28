@@ -20,10 +20,11 @@
                     <button class="button mode-button is-active" type="button" data-action="set-mode" data-mode="scientific">Scientific</button>
                 </div>
                 <button id="angleModeButton" class="button angle-button" type="button" data-action="toggle-angle">DEG</button>
+                <button id="resultModeButton" class="button result-toggle-button" type="button" data-action="toggle-result-display">S⇔D</button>
             </div>
 
             <!-- V4：自然数学显示屏。MathLive 会渲染真正的分数、根号、上标和可见光标。 -->
-            <math-field id="mathDisplay" class="display math-display" virtual-keyboard-mode="off" smart-fence aria-label="自然数学显示输入框">0</math-field>
+            <math-field id="mathDisplay" class="display math-display" virtual-keyboard-mode="off" math-virtual-keyboard-policy="manual" inputmode="none" smart-fence aria-label="自然数学显示输入框">0</math-field>
             <div id="statusMessage" class="status-message" aria-live="polite"></div>
 
             <!-- V3：最近 5 次计算历史，开始时为空，不占太多空间 -->
