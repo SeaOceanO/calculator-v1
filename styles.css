@@ -5,14 +5,18 @@
 
 html,
 body {
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+    overflow: hidden;
     touch-action: manipulation;
     -webkit-text-size-adjust: 100%;
     overscroll-behavior: none;
 }
 
 body {
-    margin: 0;
     min-height: 100vh;
+    min-height: 100dvh;
     font-family: Arial, "Microsoft YaHei", sans-serif;
     background: #f3f5f7;
     color: #1f2933;
@@ -21,20 +25,27 @@ body {
 /* 页面容器：用 flex 把计算器放到页面中间 */
 .page {
     min-height: 100vh;
+    min-height: 100dvh;
+    height: 100vh;
+    height: 100dvh;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 20px;
+    justify-content: flex-start;
+    padding: max(12px, env(safe-area-inset-top)) 20px max(8px, env(safe-area-inset-bottom));
+    overflow: hidden;
 }
 
 /* 计算器外壳：限制最大宽度，手机上自动占满可用宽度 */
 .calculator {
     width: 100%;
     max-width: 420px;
+    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 20px);
     padding: 16px;
     border-radius: 8px;
     background: #ffffff;
     box-shadow: 0 18px 50px rgba(31, 41, 51, 0.16);
+    overflow: hidden;
 }
 
 button,
@@ -423,24 +434,27 @@ button,
 }
 
 /* 手机适配：屏幕很窄时缩小间距和字体 */
-@media (max-width: 420px) {
+@media (max-width: 600px) {
     .page {
-        padding: 8px;
+        justify-content: flex-start;
+        padding: max(8px, env(safe-area-inset-top)) 8px max(6px, env(safe-area-inset-bottom));
     }
 
     .calculator {
+        width: min(96vw, 430px);
+        max-height: calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
         padding: 10px;
     }
 
     .calculator-toolbar {
-        gap: 6px;
-        margin-bottom: 8px;
+        gap: 5px;
+        margin-bottom: 6px;
     }
 
     .mode-button,
     .angle-button,
     .result-toggle-button {
-        min-height: 30px;
+        min-height: 28px;
         font-size: 12px;
     }
 
@@ -450,31 +464,32 @@ button,
     }
 
     .display {
-        min-height: 62px;
-        font-size: 28px;
+        min-height: 58px;
+        margin-bottom: 2px;
+        font-size: 26px;
     }
 
     .history-list {
         gap: 4px;
-        min-height: 62px;
-        max-height: 62px;
-        margin-bottom: 8px;
+        min-height: 50px;
+        max-height: 50px;
+        margin-bottom: 6px;
     }
 
     .history-item {
-        font-size: 12px;
-        padding: 5px 8px;
+        font-size: 11px;
+        padding: 3px 7px;
     }
 
     .scientific-panel,
     .cursor-panel,
     .buttons {
-        gap: 6px;
+        gap: 5px;
     }
 
     .scientific-panel,
     .cursor-panel {
-        margin-bottom: 6px;
+        margin-bottom: 5px;
     }
 
     .button {
