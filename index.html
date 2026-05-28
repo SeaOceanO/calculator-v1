@@ -3,15 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>V1 基础计算器</title>
+    <title>V4 自然显示科学计算器</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- V4：MathLive 提供自然数学输入框，支持真正的分数、根号、上标和屏幕内光标 -->
+    <script defer src="https://cdn.jsdelivr.net/npm/mathlive"></script>
+    <script defer src="script.js"></script>
 </head>
 <body>
     <!-- 页面主体：把计算器放在屏幕中间，电脑和手机都容易使用 -->
     <main class="page">
-        <section class="calculator" aria-label="基础计算器">
-            <!-- 显示屏：readonly 表示用户不能直接改输入框，只通过按钮或键盘输入 -->
-            <input id="display" class="display" type="text" value="0" readonly aria-label="计算器显示屏">
+        <section class="calculator is-scientific" aria-label="科学计算器">
+            <!-- V3：模式切换和角度单位切换，默认显示科学模式 -->
+            <div class="calculator-toolbar">
+                <div class="mode-switch" aria-label="计算器模式">
+                    <button class="button mode-button" type="button" data-action="set-mode" data-mode="basic">Basic</button>
+                    <button class="button mode-button is-active" type="button" data-action="set-mode" data-mode="scientific">Scientific</button>
+                </div>
+                <button id="angleModeButton" class="button angle-button" type="button" data-action="toggle-angle">DEG</button>
+            </div>
+
+            <!-- V4：自然数学显示屏。MathLive 会渲染真正的分数、根号、上标和可见光标。 -->
+            <math-field id="mathDisplay" class="display math-display" virtual-keyboard-mode="off" smart-fence aria-label="自然数学显示输入框">0</math-field>
+            <div id="statusMessage" class="status-message" aria-live="polite"></div>
+
+            <!-- V3：最近 5 次计算历史，开始时为空，不占太多空间 -->
+            <div id="historyList" class="history-list is-empty" aria-label="最近 5 次计算历史"></div>
+
+            <!-- V3：科学计算扩展区。切换到 Basic 时会隐藏，避免界面太乱。 -->
+            <div id="scientificPanel" class="scientific-panel" aria-label="科学计算功能">
+                <!-- V4：自然数学模板按钮。#0/#? 是 MathLive 的占位符，用于选中内容包装和空模板。 -->
+                <button class="button button-function button-scientific" type="button" data-latex="\frac{#0}{#?}">a/b</button>
+                <button class="button button-function button-scientific" type="button" data-latex="#@^{#?}">xʸ</button>
+                <button class="button button-function button-scientific" type="button" data-latex="\sin(#0)">sin</button>
+                <button class="button button-function button-scientific" type="button" data-latex="\cos(#0)">cos</button>
+
+                <button class="button button-function button-scientific" type="button" data-latex="\tan(#0)">tan</button>
+                <button class="button button-function button-scientific" type="button" data-latex="\log(#0)">log</button>
+                <button class="button button-function button-scientific" type="button" data-latex="\ln(#0)">ln</button>
+                <button class="button button-function button-scientific" type="button" data-latex="\frac{1}{#@}">1/x</button>
+
+                <button class="button button-function button-scientific" type="button" data-latex="#@!">x!</button>
+                <button class="button button-function button-scientific" type="button" data-latex="\mathrm{Ans}">Ans</button>
+            </div>
+
+            <!-- V4：屏幕方向键，方便手机端在分数、根号、上标里移动光标 -->
+            <div class="cursor-panel" aria-label="光标移动">
+                <button class="button button-function button-cursor" type="button" data-action="move-left">←</button>
+                <button class="button button-function button-cursor" type="button" data-action="move-right">→</button>
+                <button class="button button-function button-cursor" type="button" data-action="move-up">↑</button>
+                <button class="button button-function button-cursor" type="button" data-action="move-down">↓</button>
+            </div>
 
             <!-- 按钮区：data-value 是 JavaScript 读取的真实输入值 -->
             <div class="buttons">
@@ -26,30 +67,38 @@
                 <button class="button" type="button" data-value="(">(</button>
                 <button class="button" type="button" data-value=")">)</button>
 
+                <!-- V2 新增功能键：保持 4 列布局，避免界面变乱 -->
+                <button class="button button-function" type="button" data-action="toggle-sign">+/-</button>
+                <button class="button button-function" type="button" data-value="%">%</button>
+                <button class="button button-function" type="button" data-latex="#@^{2}">x²</button>
+                <button class="button button-function" type="button" data-latex="\sqrt{#0}">√</button>
+
+                <button class="button button-function" type="button" data-latex="#@^{#?}">xʸ</button>
+                <button class="button button-function" type="button" data-latex="\pi">π</button>
+                <button class="button button-function" type="button" data-value="e">e</button>
+                <button class="button button-operator" type="button" data-value="/">&divide;</button>
+
                 <button class="button" type="button" data-value="7">7</button>
                 <button class="button" type="button" data-value="8">8</button>
                 <button class="button" type="button" data-value="9">9</button>
-                <button class="button button-operator" type="button" data-value="/">&divide;</button>
+                <button class="button button-operator" type="button" data-value="*">&times;</button>
 
                 <button class="button" type="button" data-value="4">4</button>
                 <button class="button" type="button" data-value="5">5</button>
                 <button class="button" type="button" data-value="6">6</button>
-                <button class="button button-operator" type="button" data-value="*">&times;</button>
+                <button class="button button-operator" type="button" data-value="-">&minus;</button>
 
                 <button class="button" type="button" data-value="1">1</button>
                 <button class="button" type="button" data-value="2">2</button>
                 <button class="button" type="button" data-value="3">3</button>
-                <button class="button button-operator" type="button" data-value="-">&minus;</button>
-
-                <button class="button" type="button" data-value="0">0</button>
-                <button class="button" type="button" data-value=".">.</button>
                 <button class="button button-operator" type="button" data-value="+">+</button>
+
+                <button class="button button-zero" type="button" data-value="0">0</button>
+                <button class="button" type="button" data-value=".">.</button>
                 <button class="button button-equals" type="button" data-action="calculate">=</button>
             </div>
         </section>
     </main>
 
-    <!-- 把 JavaScript 放在页面底部加载，确保上面的 HTML 已经存在 -->
-    <script src="script.js"></script>
 </body>
 </html>

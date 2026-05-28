@@ -23,26 +23,182 @@ body {
 /* 计算器外壳：限制最大宽度，手机上自动占满可用宽度 */
 .calculator {
     width: 100%;
-    max-width: 380px;
+    max-width: 420px;
     padding: 18px;
     border-radius: 8px;
     background: #ffffff;
     box-shadow: 0 18px 50px rgba(31, 41, 51, 0.16);
 }
 
-/* 显示屏：右对齐，像普通计算器一样显示表达式和结果 */
+/* V3 顶部工具栏：模式切换和 DEG/RAD 切换 */
+.calculator-toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.mode-switch {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    flex: 1;
+    gap: 6px;
+    padding: 4px;
+    border-radius: 8px;
+    background: #eef2f7;
+}
+
+.mode-button,
+.angle-button {
+    min-height: 38px;
+    border-radius: 7px;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: none;
+}
+
+.mode-button.is-active,
+.angle-button {
+    background: #111827;
+    color: #ffffff;
+}
+
+.mode-button.is-active:hover,
+.mode-button.is-active:focus,
+.angle-button:hover,
+.angle-button:focus {
+    background: #111827;
+    color: #ffffff;
+}
+
+/* V4 显示屏：MathLive 自然数学输入框，支持横向滚动和可见光标 */
 .display {
     width: 100%;
-    height: 72px;
-    margin-bottom: 14px;
+    min-height: 78px;
+    margin-bottom: 8px;
     padding: 0 16px;
     border: 1px solid #d8dee6;
     border-radius: 8px;
     background: #f8fafc;
     color: #111827;
     font-size: 32px;
-    line-height: 72px;
     text-align: right;
+    overflow-x: auto;
+}
+
+.math-display {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    --caret-color: #2563eb;
+    --selection-background-color: rgba(37, 99, 235, 0.18);
+    --contains-highlight-background-color: rgba(37, 99, 235, 0.1);
+    --placeholder-opacity: 0.38;
+}
+
+.math-display:focus {
+    outline: none;
+    border-color: #cbd5e1;
+}
+
+.math-display::part(virtual-keyboard-toggle),
+.math-display::part(menu-toggle) {
+    display: none;
+}
+
+/* V4 错误提示：计算失败时不清空表达式，只给轻微提示 */
+.status-message {
+    min-height: 18px;
+    margin-bottom: 8px;
+    color: #ef4444;
+    font-size: 13px;
+    text-align: right;
+}
+
+.status-message:empty {
+    margin-bottom: 4px;
+}
+
+.math-display.is-invalid {
+    border-color: #fca5a5;
+    animation: invalid-nudge 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes invalid-nudge {
+    0% {
+        transform: translateX(0);
+    }
+
+    35% {
+        transform: translateX(-3px);
+    }
+
+    70% {
+        transform: translateX(2px);
+    }
+
+    100% {
+        transform: translateX(0);
+    }
+}
+
+/* V3 历史记录：只显示最近 5 次，空的时候隐藏 */
+.history-list {
+    display: grid;
+    gap: 6px;
+    max-height: 78px;
+    margin-bottom: 14px;
+    overflow: hidden;
+}
+
+.history-list.is-empty {
+    display: none;
+}
+
+.history-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: 7px;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 13px;
+    line-height: 1.25;
+}
+
+.history-expression {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.history-result {
+    color: #111827;
+    font-weight: 700;
+}
+
+/* V3 科学功能区：独立于主键盘，切换 Basic 时隐藏 */
+.scientific-panel {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.calculator:not(.is-scientific) .scientific-panel {
+    display: none;
+}
+
+.cursor-panel {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.button-cursor {
+    min-height: 42px;
+    font-size: 18px;
 }
 
 /* 按钮区：4 列网格，对应普通计算器布局 */
@@ -76,6 +232,23 @@ body {
         opacity 240ms cubic-bezier(0.16, 1, 0.3, 1),
         transform 320ms cubic-bezier(0.16, 1, 0.3, 1),
         box-shadow 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* V2 功能键：颜色比数字键略深，和蓝色运算符保持区分 */
+.button-function {
+    background: #d7dee8;
+    font-size: 19px;
+}
+
+.button-scientific {
+    min-height: 50px;
+    background: #dbe4ef;
+    font-size: 17px;
+}
+
+.button-function:hover,
+.button-function:focus {
+    background: #cbd5e1;
 }
 
 /* 按钮上的柔光层：hover 和 press 时只改变透明度，不影响布局 */
@@ -187,6 +360,7 @@ body {
 .button-equals {
     background: #16a34a;
     color: #ffffff;
+    grid-column: span 2;
 }
 
 .button-equals:hover,
@@ -217,14 +391,40 @@ body {
         padding: 14px;
     }
 
+    .calculator-toolbar {
+        gap: 8px;
+    }
+
+    .mode-button,
+    .angle-button {
+        min-height: 34px;
+        font-size: 12px;
+    }
+
     .display {
-        height: 64px;
+        min-height: 68px;
         font-size: 28px;
-        line-height: 64px;
+    }
+
+    .history-item {
+        font-size: 12px;
     }
 
     .button {
         min-height: 54px;
         font-size: 20px;
+    }
+
+    .button-function {
+        font-size: 17px;
+    }
+
+    .button-scientific {
+        min-height: 46px;
+        font-size: 15px;
+    }
+
+    .button-cursor {
+        min-height: 40px;
     }
 }
